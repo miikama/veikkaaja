@@ -1,0 +1,11 @@
+
+# python files
+env
+**/*.pyc
+**/__pycache__
+**/*.egg-info
+
+# vsocde
+**/*.code-workspace
+.vscode
+
