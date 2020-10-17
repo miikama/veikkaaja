@@ -1,6 +1,12 @@
-"""veikkaaja module, here we set up the logging"""
+"""
+veikkaaja module, here we set up the logging
+
+export VEIKKAAJA_DEBUG=1 environment variable to
+set the log level to logging.DEBUG.
+"""
 import logging
 import logging.handlers
+import os
 import sys
 from datetime import datetime
 
@@ -8,7 +14,10 @@ LOGGING_INITIALIZED = False
 
 if not LOGGING_INITIALIZED:
     logger = logging.getLogger('veikkaaja')
+
     logger.setLevel(logging.INFO)
+    if os.environ.get('VEIKKAAJA_DEBUG', False):
+        logger.setLevel(logging.DEBUG)
 
     class NiceFormatter(logging.Formatter):
         """Format: [  INFO ] 2020-10-17 10:42:41 | The message."""
