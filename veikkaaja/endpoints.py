@@ -37,12 +37,12 @@ class EndPoint:
     @classmethod
     def single_event_info_endpoint(cls, event_id: int):
         """get info of upcoming games"""
-        return cls("v1/sports/events/{event_id}")
+        return cls(f"v1/sports/events/{event_id}")
 
     @classmethod
     def single_draw_info_endpoint(cls, draw_id: int):
         """get info of upcoming games"""
-        return cls("odj/v2/sport-games/draws/{draw_id}")
+        return cls(f"odj/v2/sport-games/draws/{draw_id}")
 
     @classmethod
     def place_wager_test_endpoint(cls):
@@ -62,12 +62,12 @@ class EndPoint:
     @classmethod
     def sport_categories_endpoint(cls, sport_id: int):
         """get available categories for a sport"""
-        return cls("v1/sports/{sport_id}")
+        return cls(f"v1/sports/{sport_id}")
 
     @classmethod
     def sport_tournaments_endpoint(cls, sport_id: int, sport_category_id: int):
         """get available tournaments for sport and category"""
-        return cls("v1/sports/{sport_id}/categories/{sport_category_id}")
+        return cls(f"v1/sports/{sport_id}/categories/{sport_category_id}")
 
     @classmethod
     def sport_tournament_info_endpoint(cls, sport_id: int,
@@ -75,5 +75,5 @@ class EndPoint:
                                        tournament_id: int):
         """get info for a specific sport, category, and tournament."""
         return cls(
-            "v1/sports/{sport_id}/categories/{sport_category_id}/tournaments/{tournament_id}"
+            f"v1/sports/{sport_id}/categories/{sport_category_id}/tournaments/{tournament_id}"
         )

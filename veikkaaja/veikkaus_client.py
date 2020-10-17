@@ -1,16 +1,18 @@
 """Main veikkaus client module"""
-import requests
-import os
 import json
+import os
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, NamedTuple, Any, Union
+from typing import Any, Dict, List, NamedTuple, Union
+
+import requests
 
 from veikkaaja import logger
 from veikkaaja.endpoints import EndPoint
 
 
 class GameTypes(Enum):
+    """Available gamemodes in the API"""
     MULTISCORE = "MULTISCORE"  # Moniveto
     SCORE = "SCORE"  # Tulosveto
     SPORT = "SPORT"  # Vakio
@@ -39,11 +41,17 @@ class BetDecision(NamedTuple):
 
 
 class Game:
+    """A class for holding EBET event information"""
+
+    # pylint:disable=too-many-instance-attributes
+    # This is intended just as a wrapper to hold the
+    # data in the API response
+
     home_team = ""
     away_team = ""
-    home_odds = 0
-    away_odds = 0
-    draw_odds = 0
+    home_odds = 0.0
+    away_odds = 0.0
+    draw_odds = 0.0
     id = 0
     event_id = 0
     row_id = 0
@@ -63,11 +71,13 @@ class Game:
         self._client.place_bet(self, bet)
 
     def __repr__(self):
+        """Make nicer output"""
         close_str = self.close_time.strftime("%d.%m.%Y %H:%M")
-        return f"{self.__class__.__name__:} type: '{self.draw_type:3}' {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6})"
+        return f"{self.__class__.__name__:} type: '{self.draw_type:3}' {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.row_id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6})"  #pylint:disable=line-too-long
 
 
 class EventInfo:
+    """A wrapper to keep information of the EBET draws"""
     league = ""
     external_id = ""
 
@@ -76,6 +86,7 @@ class EventInfo:
 
 
 class VeikkausClient:
+    """The main client that holds on the API session"""
 
     API_HEADERS = {
         "Content-Type": "application/json",
@@ -85,9 +96,9 @@ class VeikkausClient:
 
     def __init__(self, account="", password=""):
         """
-        Args:
+        Arguments:
             account (str):  Name of the account or empty if empty
-                            account name is loaded from VEIKKAUS_ACCOUNT 
+                            account name is loaded from VEIKKAUS_ACCOUNT
                             environment variable.
             password (str): account password. If empty, loaded from
                             VEIKKAUS_PASSWORD environment variable
@@ -96,22 +107,20 @@ class VeikkausClient:
         acc_password = password
         if not acc_password:
             if "VEIKKAUS_PASSWORD" not in os.environ:
-                raise RuntimeError(
-                    "Missing account authentication information")
+                raise RuntimeError("Missing account authentication information")
             acc_password = os.environ['VEIKKAUS_PASSWORD']
 
         acc = account
         if not acc:
             if "VEIKKAUS_ACCOUNT" not in os.environ:
-                raise RuntimeError(
-                    "Missing account authentication information")
+                raise RuntimeError("Missing account authentication information")
             acc = os.environ['VEIKKAUS_ACCOUNT']
 
         self.session = self.login(acc, acc_password)
 
     def _access_endpoint(self,
                          endpoint: EndPoint,
-                         payload: Dict[str, Any] = {},
+                         payload: Dict[str, Any] = None,
                          method="GET") -> Union[requests.Response, None]:
         """
         A common wrapper for sending and logging API requests
@@ -121,44 +130,40 @@ class VeikkausClient:
             payload: dictionary of the query parameters
             method: GET or POST
         """
+        payload = {} if payload is None else payload
 
         if not self.session:
-            logger.warn("No active session for accessing '{}'.".format(
-                endpoint.endpoint))
+            logger.warning("No active session for accessing '%s'.", endpoint.endpoint)
             return None
 
         # log sending out a request
-        payload_text = "\n{}".format(json.dumps(payload,
-                                              indent=4)) if payload else ""
-        logger.info("\033[93mSending\033[0m {} {}:{}".format(
-            method, endpoint.url, payload_text))
+        payload_text = "\n{}".format(json.dumps(payload, indent=4)) if payload else ""
+        logger.info("\033[93mSending\033[0m %s %s:%s", method, endpoint.url, payload_text)
 
         if method == "GET":
-            response = self.session.get(endpoint.url,
-                                        headers=self.API_HEADERS,
-                                        params=payload)
+            response = self.session.get(
+                endpoint.url, headers=self.API_HEADERS, params=payload)
         elif method == "POST":
-            response = self.session.post(endpoint.url,
-                                         headers=self.API_HEADERS,
-                                         json=payload)
+            response = self.session.post(
+                endpoint.url, headers=self.API_HEADERS, json=payload)
         else:
             raise RuntimeError("Unsupported method {}".format(method))
 
         if response.status_code != 200:
             # log out the error
-            logger.error("Request failed {}, {}. URL: {}".format(
-                response.status_code, response.reason, response.url))
+            logger.warning("hello")
+            logger.error("\033[91mRequest failed\033[0m %s, %s. URL: %s", response.status_code,
+                         response.reason, response.url)
 
             # RED debug log entry
             if response.content:
-                logger.debug("\033[91mInvalid request:\033[0m\n{}".format(
-                    response.content))
+                logger.debug("\033[91mInvalid request:\033[0m\n%s", response.content)
             return None
 
         # green dedub log entry, the responses are quite large
-        logger.info("\033[92mResponse OK\033[0m from {}".format(
-            endpoint.endpoint))
-        logger.debug("\033[92mReceived:\033[0m\n{}".format(json.dumps(response.json(), indent=4)))
+        logger.info("\033[92mResponse OK\033[0m from %s", endpoint.endpoint)
+        logger.debug("\033[92mReceived:\033[0m\n%s",
+                     json.dumps(response.json(), indent=4))
 
         return response
 
@@ -169,18 +174,15 @@ class VeikkausClient:
         Returns:
             requests.Session or None if login failed.
         """
-        login_payload = {
-            "type": "STANDARD_LOGIN",
-            "login": account,
-            "password": password
-        }
+        login_payload = {"type": "STANDARD_LOGIN", "login": account, "password": password}
         logger.info("Trying to log in...")
-        logger.info("\033[93mSending\033[0m {} {}".format(
-            "GET", EndPoint.login_endpoint().endpoint))
+        logger.info("\033[93mSending\033[0m %s %s", "GET",
+                    EndPoint.login_endpoint().endpoint)
         session = requests.Session()
-        response = session.post(EndPoint.login_endpoint(),
-                                data=json.dumps(login_payload),
-                                headers=self.API_HEADERS)
+        response = session.post(
+            EndPoint.login_endpoint(),
+            data=json.dumps(login_payload),
+            headers=self.API_HEADERS)
 
         if response.status_code != 200:
             logger.error("Cannot login")
@@ -198,19 +200,16 @@ class VeikkausClient:
         assert balance in ('balance', 'usableBalance',
                            'frozenBalance'), "Invalid balance type"
 
-        response = self._access_endpoint(EndPoint.account_info_endpoint(),
-                                         method="GET")
+        response = self._access_endpoint(EndPoint.account_info_endpoint(), method="GET")
 
         if response is None:
             return 0
 
         cash = response.json().get('balances', {}).get('CASH', {})
-        logger.info(
-            "Account has balance: total: {} €, frozen: {} €, usable: {} €".
-            format(
-                cash.get('balance', 0) / 100,
-                cash.get('frozenBalance', 0) / 100,
-                cash.get('usableBalance', 0) / 100))
+        logger.info("Account has balance: total: %s €, frozen: %s €, usable: %s €",
+                    cash.get('balance', 0) / 100,
+                    cash.get('frozenBalance', 0) / 100,
+                    cash.get('usableBalance', 0) / 100)
 
         # return the requested balance
         return cash.get(balance, 0) / 100
@@ -219,9 +218,8 @@ class VeikkausClient:
         """Get upcoming games"""
 
         payload = {'game-names': game_type.value}
-        response = self._access_endpoint(EndPoint.games_info_endpoint(),
-                                         payload=payload,
-                                         method="GET")
+        response = self._access_endpoint(
+            EndPoint.games_info_endpoint(), payload=payload, method="GET")
 
         if not response:
             return []
@@ -231,8 +229,7 @@ class VeikkausClient:
         if game_type == GameTypes.EBET:
             return self.parse_draws(data)
 
-        logger.warn("Not yet implemented game type: {}".format(
-            game_type.value))
+        logger.warning("Not yet implemented game type: %s", game_type.value)
         return []
 
     def parse_draws(self, data: Dict):
@@ -312,16 +309,14 @@ class VeikkausClient:
         """
 
         games = []
-        for entry in data.get('draws'):
+        for entry in data.get('draws', []):
 
             good = True
             game = Game(self)
-            game._raw_data = entry
-            game.id = entry.get('id')
+            game.row_id = entry.get('id')
             game.brand_name = entry.get('brandName')
             game.status = entry.get('status')
-            game.close_time = datetime.fromtimestamp(
-                entry.get('closeTime', 0) / 1000)
+            game.close_time = datetime.fromtimestamp(entry.get('closeTime', 0) / 1000)
             for row in entry.get('rows', []):
 
                 game.event_id = row.get('eventId')
@@ -337,9 +332,8 @@ class VeikkausClient:
                         game.away_odds = float(comp.get('odds').get('odds'))
                     if comp.get('id') == "3":
                         if not comp.get('name') == "Tasapeli":
-                            logger.debug(
-                                "Skipping {}, since it has no 'Tasapeli' odds".
-                                format(row.get('name')))
+                            logger.debug("Skipping %s, since it has no 'Tasapeli' odds",
+                                         row.get('name'))
                             good = False
                         game.draw_odds = float(comp.get('odds').get('odds'))
 
@@ -370,9 +364,8 @@ class VeikkausClient:
         ]
         """
         payload = {'lang': "fi"}
-        response = self._access_endpoint(EndPoint.sport_type_code_endpoint(),
-                                         payload,
-                                         method="GET")
+        response = self._access_endpoint(
+            EndPoint.sport_type_code_endpoint(), payload, method="GET")
 
         if not response:
             return []
@@ -382,7 +375,7 @@ class VeikkausClient:
     def sport_categories(self, sport_id: int) -> List[Dict[str, str]]:
         """
         query available sport type subgateries
-        
+
         e.g. for football query different countries
         that have football leagues.
 
@@ -408,9 +401,7 @@ class VeikkausClient:
         """
         payload = {'lang': "fi"}
         response = self._access_endpoint(
-            EndPoint.sport_categories_endpoint(sport_id),
-            payload,
-            method="GET")
+            EndPoint.sport_categories_endpoint(sport_id), payload, method="GET")
 
         if not response:
             return []
@@ -421,7 +412,7 @@ class VeikkausClient:
                           sport_category_id: int) -> List[Dict[str, str]]:
         """
         query available tournaments for sport type subgateries
-        
+
         e.g. for football query different countries
         that have football leagues.
 
@@ -447,10 +438,10 @@ class VeikkausClient:
         """
 
         payload = {'lang': "fi"}
-        response = self._access_endpoint(EndPoint.sport_tournaments_endpoint(
-            sport_id, sport_category_id),
-                                         payload,
-                                         method="GET")
+        response = self._access_endpoint(
+            EndPoint.sport_tournaments_endpoint(sport_id, sport_category_id),
+            payload,
+            method="GET")
 
         if not response:
             return []
@@ -461,7 +452,7 @@ class VeikkausClient:
                               sport_tournament_id) -> List[Dict[str, str]]:
         """
         query available tournaments for sport type subgateries
-        
+
         e.g. for football query different countries
         that have football leagues.
 
@@ -496,18 +487,17 @@ class VeikkausClient:
 
         payload = {'lang': "fi"}
         response = self._access_endpoint(
-            EndPoint.sport_tournament_info_endpoint(sport_id,
-                                                    sport_category_id,
+            EndPoint.sport_tournament_info_endpoint(sport_id, sport_category_id,
                                                     sport_tournament_id),
             payload,
             method="GET")
 
-        if not payload:
+        if not response:
             return []
 
         return response.json()
 
-    def event_info(self, event_id: int) -> EventInfo:
+    def event_info(self, event_id: int) -> Union[EventInfo, None]:
         """Query more specific information for the event
 
         API response:
@@ -535,15 +525,13 @@ class VeikkausClient:
                 "date": 1601319600000,
                 "externalId": "23203829",
                 "hasLiveBetting": false
-            }        
-        
+            }
+
         """
 
         payload = {'lang': "fi"}
         response = self._access_endpoint(
-            EndPoint.single_event_info_endpoint(event_id),
-            payload,
-            method="GET")
+            EndPoint.single_event_info_endpoint(event_id), payload, method="GET")
 
         if not response:
             return None
@@ -556,7 +544,7 @@ class VeikkausClient:
 
         return event
 
-    def draw_info(self, draw_id: int) -> EventInfo:
+    def draw_info(self, draw_id: int) -> Union[EventInfo,None]:
         """Query more specific information for a single draw
 
         API response:
@@ -605,7 +593,7 @@ class VeikkausClient:
 
     def place_bet(self, game: Game, bet: BetDecision, test=True) -> bool:
         """Place a bet, bet amount in cents
-        
+
         Arguments:
             game: which draw to place the bet for
             bet: what to bet
@@ -619,18 +607,15 @@ class VeikkausClient:
 
         payload = self.ebet_payload([game], [bet])
 
-        response = self._access_endpoint(endpoint,
-                                         payload=payload,
-                                         method="POST")
+        response = self._access_endpoint(endpoint, payload=payload, method="POST")
 
         if not response:
-            print("Invalid request:\n{}".format(
-                json.dumps(response.json(), indent=4)))
             return False
 
         return True
 
-    def ebet_payload(self, games: List[Game], bets: List[BetDecision]):
+    @staticmethod
+    def ebet_payload(games: List[Game], bets: List[BetDecision]):
         """
         Payload for ebet wager:
         https://github.com/VeikkausOy/sport-games-robot/blob/master/doc/ebet-single-wager-request.json
@@ -674,47 +659,37 @@ class VeikkausClient:
                 }
             ]
         """
-        assert len(games) == len(
-            bets), "Number of games has to match number of bets"
+        assert len(games) == len(bets), "Number of games has to match number of bets"
 
         def selected_play(game: Game, target: BetTarget):
             if target == BetTarget.HOME:
                 return "1", game.home_odds
-            elif target == BetTarget.X:
+            if target == BetTarget.X:
                 return "2", game.draw_odds
-            elif target == BetTarget.AWAY:
+            if target == BetTarget.AWAY:
                 return "3", game.away_odds
-            else:
-                TypeError("invalid bet target {}".format(target.value))
+            raise TypeError("invalid bet target {}".format(target.value))
 
         data = []
         for game, bet in zip(games, bets):
             game_data = {
                 "type": "NORMAL",
                 "gameName": GameTypes.EBET.value,
-                "selections": [],
             }
-            game_data["selections"].append({
+            # Loading of the data could be refactored into a
+            # cleaner typed dataclass, for now ignore types
+            game_data["selections"] = [{    # type: ignore
                 "systemBetType": "NORMAL",
                 "stake": bet.amount,
                 "competitors": {
                     "main": [selected_play(game, bet.target)[0]],
                     "spare": [int(selected_play(game, bet.target)[1])],
                 },
-                "rowId": game.id,
-            })
+                "rowId": game.row_id,
+            }]
             data.append(game_data)
 
         return data
-
-    def _confirm_reply(self, response: requests.Response) -> bool:
-        """
-        Check that the response was valid and log an 
-        approriate error message.        
-        """
-        if response.status_code != 200:
-            return False
-        return True
 
 
 def print_sport_info(client: VeikkausClient):
@@ -734,6 +709,7 @@ def print_sport_info(client: VeikkausClient):
 
 
 def main():
+    """A test function"""
     client = VeikkausClient()
 
     # get balances
@@ -742,7 +718,7 @@ def main():
     # get upcoming EBET (Pitkäveto) draws
     games = client.upcoming_events(GameTypes.EBET)
     logger.info(games[0])
-    logger.info("and {} other games".format(len(games) - 2))
+    logger.info("and %s other games", len(games) - 2)
     logger.info(games[-1])
 
     if not games:
@@ -752,9 +728,7 @@ def main():
     game = games[-1]
     print("\n\nplacing bet for game:\n{}\n".format(game))
 
-    success = client.place_bet(game,
-                               BetDecision(BetTarget.HOME, 100),
-                               test=True)
+    success = client.place_bet(game, BetDecision(BetTarget.HOME, 100), test=True)
 
     if success:
         logger.info("\033[32mSUCCESS\033[0m bet placed")
