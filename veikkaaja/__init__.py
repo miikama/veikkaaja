@@ -10,6 +10,8 @@ import os
 import sys
 from datetime import datetime
 
+__version__ = "0.1.0"
+
 LOGGING_INITIALIZED = False
 
 if not LOGGING_INITIALIZED:
