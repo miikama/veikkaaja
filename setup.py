@@ -12,7 +12,7 @@ setuptools.setup(
     description="A wrapper for Veikkaus (veikkaus.fi) betting API.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://github.com/miikama/veikkaaja",
     packages=setuptools.find_packages(exclude='test'),
     classifiers=[
         "Programming Language :: Python :: 3",
