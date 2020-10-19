@@ -4,6 +4,8 @@ env
 **/*.pyc
 **/__pycache__
 **/*.egg-info
+build
+dist
 
 # vsocde
 **/*.code-workspace
