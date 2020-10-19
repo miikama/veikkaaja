@@ -5,19 +5,18 @@ Veikkaaja is a straight-forward wrapper for the `Veikkaus` betting API. This pac
 
 The Veikkaus API is quite extensive, endpoints for getting the game information and enabling betting are supported for the following game modes: 
 
-|  |  |
-|-----------|----------|
-|MULTISCORE | Moniveto |
-|SCORE | Tulosveto |
-|SPORT | Vakio |
-|WINNER | Voittajavedot|
-|PICKTWO | Päivän pari|
-|PICKTHREE | Päivän trio|
-|PERFECTA | Superkaksari|
-|TRIFECTA | Supertripla|
-|EBET | Pitkäveto|
-|RAVI | Moniveikkaus|
-
+|API Name  | oikea nimi | implemented |
+|-----------|----------|-|
+|MULTISCORE | Moniveto | - |
+|SCORE | Tulosveto | - |
+|SPORT | Vakio | - |
+|WINNER | Voittajavedot| - |
+|PICKTWO | Päivän pari| - |
+|PICKTHREE | Päivän trio| - |
+|PERFECTA | Superkaksari| - |
+|TRIFECTA | Supertripla| - |
+|EBET | Pitkäveto| 👍 |
+|RAVI | Moniveikkaus| - |
 
 Currently, only endpoints for EBET (Pitkäveto) are implemented in this wrapper. Contributions for the rest of the endpoints are welcome.
 
@@ -76,3 +75,16 @@ success = client.place_bet(game,
 Veikkaus API also provides a testing endpoint, which can be used to validate your bets before actually submitting them. If you set the `test=True` argument in the betting function call, the testing endpoint is used instead. 
 
 > Note: The testing endpoint is the default, set test=False to actually place bets.
+
+
+## Contributing
+
+I am happy if someone is interested in adding contributions to other endpoints other than EBET. To run test and install used dev-tools one should clone this repository and install the optional dependencies
+
+```sh
+git clone https://github.com/miikama/veikkaaja
+cd veikkaaja
+pip install -e .[dev]
+```
+
+See description of our testing approach in [testing](test/README.md)
