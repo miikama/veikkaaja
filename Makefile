@@ -9,3 +9,7 @@ lint:
 
 .PHONY: check
 check: lint type-check
+
+.PHONY: test
+test:
+	pytest
