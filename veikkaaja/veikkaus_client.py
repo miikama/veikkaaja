@@ -140,6 +140,8 @@ class VeikkausClient:
         payload_text = "\n{}".format(json.dumps(payload, indent=4)) if payload else ""
         logger.info("\033[93mSending\033[0m %s %s:%s", method, endpoint.url, payload_text)
 
+        self.save_outgoing_request(endpoint, payload)
+
         if method == "GET":
             response = self.session.get(
                 endpoint.url, headers=self.API_HEADERS, params=payload)
@@ -149,11 +151,13 @@ class VeikkausClient:
         else:
             raise RuntimeError("Unsupported method {}".format(method))
 
+        self.save_incoming_response(endpoint, response)
+
         if response.status_code != 200:
             # log out the error
             logger.warning("hello")
-            logger.error("\033[91mRequest failed\033[0m %s, %s. URL: %s", response.status_code,
-                         response.reason, response.url)
+            logger.error("\033[91mRequest failed\033[0m %s, %s. URL: %s",
+                         response.status_code, response.reason, response.url)
 
             # RED debug log entry
             if response.content:
@@ -166,6 +170,12 @@ class VeikkausClient:
                      json.dumps(response.json(), indent=4))
 
         return response
+
+    def save_outgoing_request(self, endpoint: EndPoint, payload: Dict[Any, Any]):
+        """For testing, add and interface for saving the outgoing messages."""
+
+    def save_incoming_response(self, endpoint: EndPoint, response: requests.Response):
+        """For testing, add and interface for saving the incoming responses."""
 
     def login(self, account: str, password: str):
         """
