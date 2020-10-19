@@ -29,6 +29,7 @@ setuptools.setup(
             'yapf',
             'mypy',
             'responses',
+            'twine',
         ]
     },
     python_requires='>=3.6',
