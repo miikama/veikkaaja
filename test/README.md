@@ -1,5 +1,3 @@
-![Build and Test](https://github.com/miikama/veikkaaja/workflows/Build%20and%20Test/badge.svg?branch=master)
-
 # Testing veikkaaja
 
 The overall testing strategy is to avoid queries to the actual Veikkaus API endpoints when running tests. Mainly because it would create too much hassle with the Veikkaus credentials.
