@@ -52,7 +52,6 @@ class Game:
     home_odds = 0.0
     away_odds = 0.0
     draw_odds = 0.0
-    id = 0
     event_id = 0
     row_id = 0
     draw_type = ""  # 1x2
@@ -554,7 +553,7 @@ class VeikkausClient:
 
         return event
 
-    def draw_info(self, draw_id: int) -> Union[EventInfo,None]:
+    def draw_info(self, draw_id: int) -> Union[EventInfo, None]:
         """Query more specific information for a single draw
 
         API response:
@@ -743,7 +742,7 @@ def main():
     if success:
         logger.info("\033[32mSUCCESS\033[0m bet placed")
 
-    #print_sport_info(client)
+    # print_sport_info(client)
 
 
 if __name__ == "__main__":
