@@ -1,4 +1,5 @@
 ![Build and Test](https://github.com/miikama/veikkaaja/workflows/Build%20and%20Test/badge.svg?branch=master)
+[![PyPI version](https://badge.fury.io/py/veikkaaja.svg)](https://badge.fury.io/py/veikkaaja)
 
 # Veikkaaja
 
