@@ -6,7 +6,6 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="veikkaaja",
-    version="0.1.0",
     author="Miika Mäkelä",
     author_email="makelanmiika@gmail.com",
     description="A wrapper for Veikkaus (veikkaus.fi) betting API.",
