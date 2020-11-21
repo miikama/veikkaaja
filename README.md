@@ -1,29 +1,27 @@
-![Build and Test](https://github.com/miikama/veikkaaja/workflows/Build%20and%20Test/badge.svg?branch=master)
-[![PyPI version](https://badge.fury.io/py/veikkaaja.svg)](https://badge.fury.io/py/veikkaaja)
+![Build and Test](https://github.com/miikama/veikkaaja/workflows/Build%20and%20Test/badge.svg?branch=master) [![PyPI version](https://badge.fury.io/py/veikkaaja.svg)](https://badge.fury.io/py/veikkaaja)
 
 # Veikkaaja
 
 Veikkaaja is a straight-forward wrapper for the `Veikkaus` betting API. This package is not affiliated with Veikkaus in any way, use at your own peril. An official description of the API and the entrypoints can be found at [Veikkaus reference implementation](https://github.com/VeikkausOy/sport-games-robot)
 
-The Veikkaus API is quite extensive, endpoints for getting the game information and enabling betting are supported for the following game modes: 
+The Veikkaus API is quite extensive, endpoints for getting the game information and enabling betting are supported for the following game modes:
 
-|API Name  | oikea nimi | implemented |
-|-----------|----------|-|
-|MULTISCORE | Moniveto | - |
-|SCORE | Tulosveto | - |
-|SPORT | Vakio | - |
-|WINNER | Voittajavedot| - |
-|PICKTWO | Päivän pari| - |
-|PICKTHREE | Päivän trio| - |
-|PERFECTA | Superkaksari| - |
-|TRIFECTA | Supertripla| - |
-|EBET | Pitkäveto| 👍 |
-|RAVI | Moniveikkaus| - |
+API Name   | oikea nimi    | implemented
+---------- | ------------- | -----------
+MULTISCORE | Moniveto      | -
+SCORE      | Tulosveto     | -
+SPORT      | Vakio         | -
+WINNER     | Voittajavedot | -
+PICKTWO    | Päivän pari   | -
+PICKTHREE  | Päivän trio   | -
+PERFECTA   | Superkaksari  | -
+TRIFECTA   | Supertripla   | -
+EBET       | Pitkäveto     | 👍
+RAVI       | Moniveikkaus  | -
 
 Currently, only endpoints for EBET (Pitkäveto) are implemented in this wrapper. Contributions for the rest of the endpoints are welcome.
 
-
-## Installation 
+## Installation
 
 This package is available at [PyPI](pypi.org). Install with `pip`:
 
@@ -32,6 +30,8 @@ pip install veikkaaja
 ```
 
 ## Usage
+
+### Accessing your account
 
 For accessing the API endpoints, you need a valid Veikkaus-account. You can provide the account information as arguments to the `VeikkausClient` upon initialization or as environment variables. If not provided as arguments to the client, the account information is read from the following environment variables:
 
@@ -55,18 +55,26 @@ client.get_balance())
 0.0
 ```
 
+### Available games
+
 Get the available games:
 
 ```python
+from veikkaaja.veikkaus_client import GameTypes
+
 # get upcoming EBET (Pitkäveto) draws
 games = client.upcoming_events(GameTypes.EBET)
 print(games[0])
 Game type: '12 ' 25.10.2020 02:58 : Khabib          - J.Gaethje       id: 2170768 event_id: 98816225 status: OPEN, odds: ( 131.0 - 0 -  320.0)
 ```
 
+### Placing bets
+
 Select a game and bet:
 
 ```python
+from veikkaaja.veikkaus_client import BetTarget
+
 # place bet on the selected game
 game = games[0]
 success = client.place_bet(game,
@@ -74,10 +82,26 @@ success = client.place_bet(game,
                             test=True)
 ```
 
-Veikkaus API also provides a testing endpoint, which can be used to validate your bets before actually submitting them. If you set the `test=True` argument in the betting function call, the testing endpoint is used instead. 
+Veikkaus API also provides a testing endpoint, which can be used to validate your bets before actually submitting them. If you set the `test=True` argument in the betting function call, the testing endpoint is used instead.
 
 > Note: The testing endpoint is the default, set test=False to actually place bets.
 
+### Logging
+
+By default, the veikkaaja API logging is quite verbose. The `veikkaaja` logging uses a standard library logger named `veikkaaja`. You can decrease the verbosity upon the package import
+
+```python
+import veikkaaja  # or any other import from veikkaaja package
+
+import logging
+logging.getLogger('veikkaaja').setLevel(logging.WARNING)
+```
+
+It is also possible to increase the verbosity to show debug log messages with
+
+```sh
+export VEIKKAAJA_DEBUG=1
+```
 
 ## Contributing
 
