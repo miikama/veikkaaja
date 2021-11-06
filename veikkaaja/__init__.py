@@ -18,8 +18,11 @@ if not LOGGING_INITIALIZED:
     logger = logging.getLogger('veikkaaja')
 
     logger.setLevel(logging.INFO)
-    if os.environ.get('VEIKKAAJA_DEBUG', False):
-        logger.setLevel(logging.DEBUG)
+    try:
+        if 'VEIKKAAJA_DEBUG' in os.environ and int(os.environ['VEIKKAAJA_DEBUG']) > 0:
+            logger.setLevel(logging.DEBUG)
+    except ValueError:
+        pass
 
     class NiceFormatter(logging.Formatter):
         """Format: [  INFO ] 2020-10-17 10:42:41 | The message."""
