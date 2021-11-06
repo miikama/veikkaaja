@@ -42,7 +42,9 @@ class Game:
     draw_odds = 0.0
     event_id = 0
     row_id = 0
-    draw_type = ""  # 1x2
+    # TODO: removed from the response, consider storing hte gametype
+    # e.g. EBET here
+    # draw_type = ""
     status = ""
     brand_name = 0
     close_time = datetime.fromtimestamp(0)
@@ -60,7 +62,7 @@ class Game:
     def __repr__(self):
         """Make nicer output"""
         close_str = self.close_time.strftime("%d.%m.%Y %H:%M")
-        return f"{self.__class__.__name__:} type: '{self.draw_type:3}' {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.row_id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6})"  #pylint:disable=line-too-long
+        return f"{self.__class__.__name__:} type: 'EBET' {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.row_id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6})"  #pylint:disable=line-too-long
 
 
 class EventInfo:
@@ -379,7 +381,6 @@ class VeikkausClient:
 
                 game.event_id = row.get('eventId')
                 game.status = row.get('status')
-                game.draw_type = row.get('type')
                 game.sport_id = row.get('sportId')
                 for comp in row.get('competitors', []):
                     if comp.get('id') == "1":

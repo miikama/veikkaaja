@@ -45,8 +45,11 @@ class EndPoint:
 
     @classmethod
     def games_info_endpoint(cls):
-        """get info of upcoming games"""
-        return cls("odj/v2/sport-games/draws")
+        """get info of upcoming games
+        Used to be 'odj/v2/sport-games/draws' but it seems
+        that the 'odj' was dropped at some point
+        """
+        return cls("v2/sport-games/draws")
 
     @classmethod
     def single_event_info_endpoint(cls, event_id: int):
