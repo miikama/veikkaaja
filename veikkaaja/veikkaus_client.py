@@ -9,20 +9,8 @@ import requests
 
 from veikkaaja import logger
 from veikkaaja.endpoints import EndPoint
-
-
-class GameTypes(Enum):
-    """Available gamemodes in the API"""
-    MULTISCORE = "MULTISCORE"  # Moniveto
-    SCORE = "SCORE"  # Tulosveto
-    SPORT = "SPORT"  # Vakio
-    WINNER = "WINNER"  # Voittajavedot
-    PICKTWO = "PICKTWO"  # Päivän pari
-    PICKTHREE = "PICKTHREE"  # Päivän trio
-    PERFECTA = "PERFECTA"  # Superkaksari
-    TRIFECTA = "TRIFECTA"  # Supertripla
-    EBET = "EBET"  # Pitkäveto
-    RAVI = "RAVI"  # Moniveikkaus
+from veikkaaja.responses import ResponseType, parse_response
+from veikkaaja.types import GameTypes
 
 
 class BetTarget(Enum):
@@ -82,6 +70,23 @@ class EventInfo:
 
     def __repr__(self):
         return f"{self.__class__.__name__}: league: {self.league}, external_id: {self.external_id}"
+
+
+class TransActionType(Enum):
+    """A enumeration of all possible transaction types"""
+    WIN = "WIN"
+    LOSS = "LOSS"
+    BUY = "BUY"
+
+
+class Wager(NamedTuple):
+    """The result of a query for transactions"""
+    external_id: str
+    id: int
+    accounting_date: datetime
+    amount: int
+    result: TransActionType
+    product: GameTypes
 
 
 class VeikkausClient:
@@ -222,6 +227,50 @@ class VeikkausClient:
 
         # return the requested balance
         return cash.get(balance, 0) / 100
+
+    def get_betting_history(self, maximum_results=50, sort_by='TXDATE') -> List[Wager]:
+        """Return the betting history
+
+        Arguments:
+            maximum_results int: max number of results sorted by sort_by
+                                 This has to be below 50
+            sort_by: Either 'TX_DATE' or 'RESULT_DATE'
+                     multiple values for sort_by are available, but might not work
+                     https://github.com/VeikkausOy/sport-games-robot/issues/95
+        """
+        assert sort_by in ('TXDATE', 'RESULT_DATE'), "Invalid sort_by"
+        assert 0 <= maximum_results <= 50, "Queried result count should be between 0 and 50."
+
+        payload = {'size': maximum_results, 'sort-by': sort_by}
+        response = self._access_endpoint(
+            EndPoint.account_betting_history(), method="GET", payload=payload)
+
+        if response is None:
+            return []
+
+        return parse_response(response.json(), ResponseType.TRANSACTION_LIST)
+
+    def get_bet_event_information(self, event: Wager):
+        """Return the more thorough information
+        for the bet with the argument id. Wager can
+        be obtained from the results of get_betting_history()
+
+        Arguments:
+            event: the wager, one of the results of from the results of
+                        get_betting_history()
+        """
+        raise NotImplementedError("endpoint is correct but payload is invalid")
+
+        #pylint:disable=unreachable
+        # What should go here
+        payload = {}
+        response = self._access_endpoint(
+            EndPoint.betting_event_information(event.external_id), method="GET", payload=payload)
+
+        if response is None:
+            return []
+
+        return []
 
     def upcoming_events(self, game_type: GameTypes) -> List[Game]:
         """Get upcoming games"""

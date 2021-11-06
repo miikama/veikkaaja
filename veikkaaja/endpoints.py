@@ -30,6 +30,20 @@ class EndPoint:
         return cls("v1/players/self/account")
 
     @classmethod
+    def account_betting_history(cls):
+        """query account information v1/players/self/account
+        https://github.com/VeikkausOy/sport-games-robot/issues/95
+        """
+        return cls("v1/players/self/account/transactions")
+
+    @classmethod
+    def betting_event_information(cls, event_id):
+        """query account information v1/draw-games/wagers
+        https://github.com/VeikkausOy/sport-games-robot/issues/16
+        """
+        return cls(f"v1/draw-games/wagers/{event_id}")
+
+    @classmethod
     def games_info_endpoint(cls):
         """get info of upcoming games"""
         return cls("odj/v2/sport-games/draws")
@@ -70,8 +84,7 @@ class EndPoint:
         return cls(f"v1/sports/{sport_id}/categories/{sport_category_id}")
 
     @classmethod
-    def sport_tournament_info_endpoint(cls, sport_id: int,
-                                       sport_category_id: int,
+    def sport_tournament_info_endpoint(cls, sport_id: int, sport_category_id: int,
                                        tournament_id: int):
         """get info for a specific sport, category, and tournament."""
         return cls(
