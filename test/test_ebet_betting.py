@@ -2,7 +2,7 @@
 
 from unittest import TestCase
 
-from veikkaaja.veikkaus_client import GameTypes
+from veikkaaja.veikkaus_client import EBETType, GameTypes
 
 from .mock_client import MockClient
 
@@ -15,22 +15,25 @@ class TestEbetBetting(TestCase):
         client = MockClient()
         games = client.upcoming_events(GameTypes.EBET)
 
-        self.assertIsNotNone(games)
-        self.assertEqual(len(games), 269)
+        games = list(filter(lambda game: game.draw_type == EBETType.ONE_X_TWO, games))
 
-        found_roda_telstar_game = False
+        self.assertIsNotNone(games)
+        self.assertEqual(len(games), 239)
+
+        found_edinburgh_stanraer_game = False
         for game in games:
             self.assertIsNotNone(game)
 
             # info for a single specific game
-            if game.home_team == "Roda JC" and game.away_team == "Telstar":
-                found_roda_telstar_game = True
-                self.assertEqual(game.draw_type, "1X2")
-                self.assertEqual(game.event_id, "98744678")
-                self.assertEqual(game.row_id, "2186938")
+            if game.home_team == "Edinburgh C" and game.away_team == "Stranraer":
+                found_edinburgh_stanraer_game = True
+                self.assertEqual(game.draw_type, EBETType.ONE_X_TWO)
+                self.assertEqual(game.event_id, "101152897")
+                self.assertEqual(game.row_id, 2799985)
+                self.assertEqual(game.list_index, "6752")
                 self.assertEqual(game.status, "OPEN")
-                self.assertEqual(game.home_odds, 188.0)
-                self.assertEqual(game.draw_odds, 375.0)
-                self.assertEqual(game.away_odds, 320.0)
+                self.assertEqual(game.home_odds, 245.0)
+                self.assertEqual(game.draw_odds, 330.0)
+                self.assertEqual(game.away_odds, 250.0)
 
-        self.assertTrue(found_roda_telstar_game)
+        self.assertTrue(found_edinburgh_stanraer_game)

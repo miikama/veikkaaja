@@ -10,7 +10,7 @@ import requests
 from veikkaaja import logger
 from veikkaaja.endpoints import EndPoint
 from veikkaaja.responses import ResponseType, parse_response
-from veikkaaja.types import GameTypes
+from veikkaaja.types import GameTypes, ParseableEnum
 
 
 class BetTarget(Enum):
@@ -27,6 +27,16 @@ class BetDecision(NamedTuple):
     # how much to bet in cents
     amount: int
 
+class EBETType(ParseableEnum):
+    """
+    enumartions of possible game types in EBET game response
+    """
+    ONE_X_TWO = "1X2"
+    ONE_TWO = "12"
+    HOME_HANDICAP = "HOME_HANDICAP"
+    AWAY_HANDICAP = "AWAY_HANDICAP"
+    OVER_UNDER = "OVER_UNDER"
+    OUTRIGHT_SHORT_TERM = "OUTRIGHT_SHORT_TERM"
 
 class Game:
     """A class for holding EBET event information"""
@@ -44,12 +54,13 @@ class Game:
     row_id = 0
     # TODO: removed from the response, consider storing hte gametype
     # e.g. EBET here
-    # draw_type = ""
+    draw_type: Union[EBETType, None] = None
     status = ""
-    brand_name = 0
+    list_index = 0
     close_time = datetime.fromtimestamp(0)
     league = ""
     sport_id = 0
+    min_stake = 0
 
     def __init__(self, client: 'VeikkausClient'):
         """"""
@@ -62,7 +73,7 @@ class Game:
     def __repr__(self):
         """Make nicer output"""
         close_str = self.close_time.strftime("%d.%m.%Y %H:%M")
-        return f"{self.__class__.__name__:} type: 'EBET' {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.row_id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6})"  #pylint:disable=line-too-long
+        return f"{self.__class__.__name__:} type: 'EBET' listindex: {self.list_index} {close_str} {self.league}: {self.home_team:15} - {self.away_team:15} id: {self.row_id} event_id: {self.event_id} status: {self.status}, odds: ({self.home_odds:6} - {self.draw_odds:6} - {self.away_odds:6} min_stake: {self.min_stake})"  #pylint:disable=line-too-long
 
 
 class EventInfo:
@@ -261,13 +272,8 @@ class VeikkausClient:
             event: the wager, one of the results of from the results of
                         get_betting_history()
         """
-        raise NotImplementedError("endpoint is correct but payload is invalid")
-
-        #pylint:disable=unreachable
-        # What should go here
-        payload = {}
         response = self._access_endpoint(
-            EndPoint.betting_event_information(event.external_id), method="GET", payload=payload)
+            EndPoint.wager_information(event.external_id), method="GET")
 
         if response is None:
             return []
@@ -369,19 +375,20 @@ class VeikkausClient:
         """
 
         games = []
-        for entry in data.get('draws', []):
+        for entry in data:
 
-            good = True
             game = Game(self)
             game.row_id = entry.get('id')
-            game.brand_name = entry.get('brandName')
+            game.list_index = entry.get('listIndex')
             game.status = entry.get('status')
             game.close_time = datetime.fromtimestamp(entry.get('closeTime', 0) / 1000)
+            game.min_stake = entry.get('gameRuleSet', {}).get('minStake', 0)
             for row in entry.get('rows', []):
 
                 game.event_id = row.get('eventId')
                 game.status = row.get('status')
                 game.sport_id = row.get('sportId')
+                game.draw_type = EBETType.parse(row.get('type'))
                 for comp in row.get('competitors', []):
                     if comp.get('id') == "1":
                         game.home_team = comp.get('name')
@@ -390,13 +397,7 @@ class VeikkausClient:
                         game.away_team = comp.get('name')
                         game.away_odds = float(comp.get('odds').get('odds'))
                     if comp.get('id') == "3":
-                        if not comp.get('name') == "Tasapeli":
-                            logger.debug("Skipping %s, since it has no 'Tasapeli' odds",
-                                         row.get('name'))
-                            good = False
                         game.draw_odds = float(comp.get('odds').get('odds'))
-
-            if good:
                 games.append(game)
 
         games = sorted(games, key=lambda game: game.close_time)
@@ -674,7 +675,7 @@ class VeikkausClient:
         return True
 
     @staticmethod
-    def ebet_payload(games: List[Game], bets: List[BetDecision]):
+    def ebet_payload(games: List[Game], bets: List[BetDecision]) -> Dict[str, Any]:
         """
         Payload for ebet wager:
         https://github.com/VeikkausOy/sport-games-robot/blob/master/doc/ebet-single-wager-request.json
@@ -720,32 +721,37 @@ class VeikkausClient:
         """
         assert len(games) == len(bets), "Number of games has to match number of bets"
 
-        def selected_play(game: Game, target: BetTarget):
+        def selected_play(target: BetTarget):
             if target == BetTarget.HOME:
-                return "1", game.home_odds
+                return 1
             if target == BetTarget.X:
-                return "2", game.draw_odds
+                return 3
             if target == BetTarget.AWAY:
-                return "3", game.away_odds
+                return 2
             raise TypeError(f"invalid bet target {target.value}")
 
-        data = []
-        for game, bet in zip(games, bets):
-            game_data = {
-                "type": "NORMAL",
-                "gameName": GameTypes.EBET.value,
-            }
-            # Loading of the data could be refactored into a
-            # cleaner typed dataclass, for now ignore types
-            game_data["selections"] = [{    # type: ignore
-                "systemBetType": "NORMAL",
-                "stake": bet.amount,
-                "competitors": {
-                    "main": [selected_play(game, bet.target)[0]],
-                    "spare": [int(selected_play(game, bet.target)[1])],
-                },
-                "rowId": game.row_id,
-            }]
-            data.append(game_data)
+        # calculate the total price by summing all bets together
+        total_price = sum(map(lambda bet: bet.amount, bets))
+        game_data = {
+            "gameName": GameTypes.EBET.value,
+            "price": total_price,
+            "boards": []
+        }
 
-        return data
+        # Fill the bet for each game under 'boards'
+        # specify the stake for each bet target individually
+        for game, bet in zip(games, bets):
+            data ={
+                "betType": "normal",
+                    "stake": total_price,
+                    "selections": [
+                        {
+                            "listIndex": game.list_index,
+                            "competitors": [selected_play(bet.target)],
+                            "stake": bet.amount
+                        }
+                    ]
+                }
+            game_data['boards'].append(data)    # type: ignore
+
+        return game_data

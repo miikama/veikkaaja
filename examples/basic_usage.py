@@ -3,8 +3,7 @@
 import json
 
 from veikkaaja import logger
-from veikkaaja.veikkaus_client import (BetDecision, BetTarget, GameTypes,
-                                       VeikkausClient)
+from veikkaaja.veikkaus_client import (BetDecision, BetTarget, GameTypes, VeikkausClient)
 
 
 def print_sport_info(client: VeikkausClient):
@@ -32,18 +31,20 @@ def main():
 
     events = client.get_betting_history()
 
-    for event in events:
-        print(event)
-        client.get_bet_event_information(event)
+    # for event in events:
+    #     print(event)
+    #     client.get_bet_event_information(event)
 
     # get upcoming EBET (Pitkäveto) draws
     games = client.upcoming_events(GameTypes.EBET)
+
+    if not games:
+        logger.info("No games found")
+        return
+
     logger.info(games[0])
     logger.info("and %s other games", len(games) - 2)
     logger.info(games[-1])
-
-    if not games:
-        return
 
     # place bet on the first game
     game = games[-1]

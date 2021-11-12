@@ -1,1 +1,1 @@
-{"status": "ACTIVE", "balances": {"CASH": {"type": "CASH", "usableBalance": 390, "balance": 390, "frozenBalance": 0, "holdBalance": 0, "currency": "EUR"}}, "timerInterval": 60}
+{"status": "ACTIVE", "timerInterval": 60, "balances": {"CASH": {"currency": "EUR", "type": "CASH", "balance": 162, "usableBalance": 162, "frozenBalance": 0, "holdBalance": 0}}}
