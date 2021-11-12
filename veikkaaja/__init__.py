@@ -10,7 +10,7 @@ import os
 import sys
 from datetime import datetime
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 
 LOGGING_INITIALIZED = False
 
