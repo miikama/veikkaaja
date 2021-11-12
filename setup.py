@@ -29,6 +29,7 @@ setuptools.setup(
             'mypy',
             'responses',
             'twine',
+            'types-requests'
         ]
     },
     python_requires='>=3.6',

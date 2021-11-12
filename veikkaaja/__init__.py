@@ -15,6 +15,7 @@ __version__ = "0.1.0"
 LOGGING_INITIALIZED = False
 
 if not LOGGING_INITIALIZED:
+    # pylint: disable=invalid-name
     logger = logging.getLogger('veikkaaja')
 
     logger.setLevel(logging.INFO)
@@ -31,6 +32,7 @@ if not LOGGING_INITIALIZED:
             record.current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             return super().format(record)
 
+    # pylint: disable=invalid-name
     sys_out_handler = logging.StreamHandler(sys.stdout)
     sys_out_handler.setFormatter(
         NiceFormatter(fmt="[%(levelname)7s ] %(current_time)s | %(message)s"))

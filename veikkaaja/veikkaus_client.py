@@ -733,7 +733,7 @@ class VeikkausClient:
         # calculate the total price by summing all bets together
         total_price = sum(map(lambda bet: bet.amount, bets))
         game_data = {
-            "gameName": GameTypes.EBET.value,
+            "gameName": GameTypes.EBET.value,   # pylint: disable=no-member
             "price": total_price,
             "boards": []
         }
@@ -741,17 +741,17 @@ class VeikkausClient:
         # Fill the bet for each game under 'boards'
         # specify the stake for each bet target individually
         for game, bet in zip(games, bets):
-            data ={
+            data = {
                 "betType": "normal",
-                    "stake": total_price,
-                    "selections": [
-                        {
-                            "listIndex": game.list_index,
-                            "competitors": [selected_play(bet.target)],
-                            "stake": bet.amount
-                        }
-                    ]
-                }
+                "stake": total_price,
+                "selections": [
+                    {
+                        "listIndex": game.list_index,
+                        "competitors": [selected_play(bet.target)],
+                        "stake": bet.amount
+                    }
+                ]
+            }
             game_data['boards'].append(data)    # type: ignore
 
         return game_data
